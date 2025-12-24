@@ -1,0 +1,172 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Open World Driving</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+
+<style>
+body { margin: 0; overflow: hidden; background: black; }
+
+
+button {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+
+#left { bottom: 20px; left: 20px; }
+#right { bottom: 20px; left: 120px; }
+#gas { bottom: 20px; right: 20px; }
+#radio { top: 20px; left: 20px; width: 140px; }
+</style>
+</head>
+
+
+<body>
+
+
+<button id="left">LEFT</button>
+<button id="right">RIGHT</button>
+<button id="gas">GAS</button>
+<button id="radio">RADIO ▶</button>
+
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+
+
+<script>
+// SCENE
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
+
+
+// CAMERA
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
+
+
+// RENDERER
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+
+// LIGHT
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const sun = new THREE.DirectionalLight(0xffffff, 0.6);
+sun.position.set(100,200,100);
+scene.add(sun);
+
+
+// OPEN WORLD GROUND
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(1000, 1000),
+  new THREE.MeshStandardMaterial({ color: 0x4caf50 })
+);
+ground.rotation.x = -Math.PI/2;
+scene.add(ground);
+
+
+// PINK CAR
+const car = new THREE.Mesh(
+  new THREE.BoxGeometry(1, 0.5, 2),
+  new THREE.MeshStandardMaterial({ color: 0xff69b4 })
+);
+car.position.y = 0.25;
+scene.add(car);
+
+
+// MOVEMENT
+let speed = 0;
+let turningLeft = false;
+let turningRight = false;
+let accelerating = false;
+
+
+document.getElementById("left").ontouchstart = () => turningLeft = true;
+document.getElementById("left").ontouchend = () => turningLeft = false;
+
+
+document.getElementById("right").ontouchstart = () => turningRight = true;
+document.getElementById("right").ontouchend = () => turningRight = false;
+
+
+document.getElementById("gas").ontouchstart = () => accelerating = true;
+document.getElementById("gas").ontouchend = () => accelerating = false;
+
+
+// RADIO
+const playlist = [
+  "music/song1.mp3",
+  "music/song2.mp3",
+  "music/song3.mp3"
+];
+
+
+let currentSong = 0;
+const audio = new Audio(playlist[currentSong]);
+
+
+document.getElementById("radio").onclick = () => {
+  if (audio.paused) {
+    audio.play();
+  } else {
+    audio.pause();
+  }
+};
+
+
+audio.onended = () => {
+  currentSong = (currentSong + 1) % playlist.length;
+  audio.src = playlist[currentSong];
+  audio.play();
+};
+
+
+// GAME LOOP
+function animate() {
+  requestAnimationFrame(animate);
+
+
+  if (accelerating) speed += 0.002;
+  speed *= 0.98;
+
+
+  if (turningLeft) car.rotation.y += 0.04;
+  if (turningRight) car.rotation.y -= 0.04;
+
+
+  car.position.x -= Math.sin(car.rotation.y) * speed;
+  car.position.z -= Math.cos(car.rotation.y) * speed;
+
+
+  camera.position.set(
+    car.position.x + Math.sin(car.rotation.y) * 6,
+    4,
+    car.position.z + Math.cos(car.rotation.y) * 6
+  );
+
+
+  camera.lookAt(car.position);
+  renderer.render(scene, camera);
+}
+
+
+animate();
+
+
+// RESIZE
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+
+
+</body>
+</html>
